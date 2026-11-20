@@ -1,0 +1,23 @@
+# dependencies
+node_modules/
+
+# build output: regenerate with `npm run build`
+dist/
+
+# test and tooling leftovers
+coverage/
+test-results/
+playwright-report/
+*.log
+
+# editors and operating systems
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+
+# local environment
+.env
+.env.*

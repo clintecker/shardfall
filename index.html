@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0c0e1a" />
+    <meta
+      name="description"
+      content="A turn-based conquest for one commander. Four future cultures, one broken slab of world, thirty turns."
+    />
+    <title>Shardfall</title>
+
+    <!--
+      This page is the development entry point AND the build manifest.
+      scripts/build.mjs reads it to produce the single-file game in dist/:
+        - every pinned CDN <script> below is kept as-is (three.js r147, UMD build)
+        - src/styles.css is inlined into a <style> tag
+        - everything between "app:start" and "app:end" is copied verbatim
+        - every <script src="src/js/..."> is concatenated, in this order, into one inline script
+      Order matters: the game is classic scripts sharing one global scope. See docs/ARCHITECTURE.md.
+    -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/utils/BufferGeometryUtils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/geometries/RoundedBoxGeometry.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/shaders/CopyShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap"
+    />
+    <link rel="stylesheet" href="src/styles.css" />
+  </head>
+  <body>
+    <!-- app:start -->
+    <div class="wrap">
+      <section class="setup" id="setup">
+        <div class="label">A turn-based conquest for one commander</div>
+        <h1>Shard<i>fall</i></h1>
+        <p class="pitch">
+          Four future cultures share one broken slab of world. Lead one of them: scout the dark,
+          take outposts, grow your cities, research new hardware, and hold the most ground when turn
+          30 ends, or take every rival city before then.
+        </p>
+        <div>
+          <div class="label" style="margin-bottom: 8px">Choose your culture</div>
+          <div class="cultures" id="cultures"></div>
+        </div>
+        <div class="opts">
+          <div class="seg">
+            <span class="label">Board</span>
+            <div id="optSize">
+              <button data-v="9" aria-pressed="false">Skirmish 9×9</button
+              ><button data-v="11" aria-pressed="true">Standard 11×11</button
+              ><button data-v="13" aria-pressed="false">Sprawl 13×13</button>
+            </div>
+          </div>
+          <div class="seg">
+            <span class="label">Rivals</span>
+            <div id="optRivals">
+              <button data-v="1" aria-pressed="false">1</button
+              ><button data-v="2" aria-pressed="true">2</button
+              ><button data-v="3" aria-pressed="false">3</button>
+            </div>
+          </div>
+          <div class="seg">
+            <span class="label">Terrain</span>
+            <div id="optLayout">
+              <button data-v="balanced" aria-pressed="true">Balanced</button
+              ><button data-v="islands" aria-pressed="false">Archipelago</button
+              ><button data-v="highlands" aria-pressed="false">Highlands</button
+              ><button data-v="wilds" aria-pressed="false">Wildwood</button>
+            </div>
+          </div>
+          <div class="seg">
+            <span class="label">Sky and weather</span>
+            <div id="optAtmo">
+              <button data-v="random" aria-pressed="true">Surprise me</button
+              ><button data-v="storm" aria-pressed="false">Neon Storm</button
+              ><button data-v="dusk" aria-pressed="false">Solar Dusk</button
+              ><button data-v="aurora" aria-pressed="false">Aurora Night</button
+              ><button data-v="eclipse" aria-pressed="false">Crimson Eclipse</button
+              ><button data-v="dawn" aria-pressed="false">Cloud Dawn</button>
+            </div>
+          </div>
+        </div>
+        <div class="go">
+          <button class="btn primary" id="startBtn">Deploy</button>
+          <button class="btn" id="resumeBtn" hidden>Resume saved game</button>
+          <button class="btn" id="setupHelp">How to play</button>
+        </div>
+        <p class="sub" style="max-width: 68ch">
+          Each city supports a limited army, so growing cities matters as much as taking them. Tap a
+          unit to see where it can move (glowing tiles) and what it can hit (red tiles). A unit that
+          starts its turn on someone else's city can capture it. Tap your city to train units; tap a
+          resource inside your borders to harvest it and grow the city.
+        </p>
+      </section>
+
+      <section id="game" hidden>
+        <div class="play">
+          <div class="stage" id="stage">
+            <canvas id="board" aria-label="Game board"></canvas
+            ><canvas id="hud" aria-hidden="true"></canvas>
+            <div class="veil" id="veil"><b>Deploying</b><span>Raising the shard</span></div>
+            <div class="banner" id="banner" aria-live="polite"><b></b><span></span></div>
+            <p class="glfail" id="glfail" hidden>
+              This game draws its board with WebGL, which this browser or device is not providing.
+              Try a current desktop or mobile browser with hardware acceleration turned on.
+            </p>
+            <div class="hudtop">
+              <div class="chips">
+                <div class="chip brandchip">Shard<i>fall</i></div>
+                <div class="chip"><span class="label">Turn</span><b class="num" id="turn"></b></div>
+                <div class="chip">
+                  <span class="label">Flux</span><b class="num" id="flux"></b
+                  ><small class="num" id="inc"></small>
+                </div>
+                <div class="chip">
+                  <span class="label">Score</span><b class="num" id="score"></b>
+                </div>
+              </div>
+              <div class="tools">
+                <button class="tool" id="techBtn" title="Research (T)">
+                  <svg viewBox="0 0 16 16" aria-hidden="true">
+                    <path
+                      d="M8 1.5 13.6 4.8v6.4L8 14.5 2.4 11.200V4.8z"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.4"
+                    />
+                    <circle cx="8" cy="8" r="1.8" fill="currentColor" /></svg
+                  ><span>Research</span><i class="dot" id="techDot" hidden></i>
+                </button>
+                <button class="tool" id="infoBtn" title="Standings and dispatches">
+                  <svg viewBox="0 0 16 16" aria-hidden="true">
+                    <path
+                      d="M2 4h12M2 8h12M2 12h8"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      fill="none"
+                    /></svg
+                  ><span>Intel</span>
+                </button>
+                <button class="tool" id="helpBtn" title="How to play (H)" aria-label="How to play">
+                  ?
+                </button>
+                <button class="tool" id="menuBtn" title="Menu" aria-label="Menu">≡</button>
+              </div>
+            </div>
+            <canvas id="mini" class="mini" aria-label="Minimap. Click to move the camera."></canvas>
+            <div class="coach" id="coach" hidden>
+              <span class="label">Tip</span><span id="coachText"></span
+              ><button id="coachSkip" aria-label="Turn off tips">×</button>
+            </div>
+            <div class="zoom" id="zoom">
+              <button data-r="-1" aria-label="Rotate board left" title="Hold to rotate left (Q)">
+                ⟲</button
+              ><button data-r="1" aria-label="Rotate board right" title="Hold to rotate right (R)">
+                ⟳</button
+              ><button data-z="1" aria-label="Zoom in">+</button
+              ><button data-z="-1" aria-label="Zoom out">−</button
+              ><button
+                data-z="0"
+                aria-label="Fit board"
+                title="Fit the board (F)"
+                style="font-size: 11px"
+              >
+                FIT
+              </button>
+            </div>
+            <div class="tip" id="tip" hidden></div>
+            <div class="ctx">
+              <div class="ctxmain" id="ctx"></div>
+              <div class="ctxend">
+                <button class="btn" id="nextBtn" title="Next unit (Space)">Next unit</button
+                ><button class="btn primary" id="endBtn" title="End turn (Enter)">End turn</button>
+              </div>
+            </div>
+          </div>
+          <aside class="dock" id="dock">
+            <div class="card">
+              <span class="label">Standings</span>
+              <div class="rivals" id="rivals"></div>
+            </div>
+            <div class="card grow">
+              <span class="label">Dispatches</span>
+              <ul class="log" id="log"></ul>
+            </div>
+            <button class="btn dockclose" id="dockClose" style="justify-content: center">
+              Close
+            </button>
+          </aside>
+        </div>
+      </section>
+    </div>
+
+    <div class="overlay" id="techOv" hidden>
+      <div class="modal">
+        <header>
+          <h2>Research</h2>
+          <button class="btn" id="techClose">Close</button>
+        </header>
+        <p class="sub">
+          Each breakthrough costs more as you hold more cities. You have
+          <b class="num" id="techFlux"></b> flux.
+        </p>
+        <div id="techGrid" class="stack" style="gap: 14px"></div>
+      </div>
+    </div>
+
+    <div class="overlay" id="helpOv" hidden>
+      <div class="modal">
+        <header>
+          <h2>How to play</h2>
+          <button class="btn" id="helpClose">Close</button>
+        </header>
+        <div id="helpBody" class="help"></div>
+      </div>
+    </div>
+
+    <div class="overlay" id="menuOv" hidden>
+      <div class="modal" style="max-width: 440px">
+        <header>
+          <h2>Menu</h2>
+          <button class="btn" id="menuClose">Resume</button>
+        </header>
+        <div class="stack" style="gap: 14px">
+          <div class="seg">
+            <span class="label">Graphics quality</span>
+            <div id="setQuality">
+              <button data-v="auto">Auto</button><button data-v="high">High</button
+              ><button data-v="low">Low</button>
+            </div>
+          </div>
+          <div class="seg">
+            <span class="label">Effects</span>
+            <div id="setFx">
+              <button data-k="weather">Weather</button><button data-k="dof">Focus blur</button
+              ><button data-k="ao">Soft shadows</button><button data-k="tips">Tips</button>
+            </div>
+          </div>
+          <button class="btn" id="menuHelp" style="justify-content: center">How to play</button>
+          <button class="btn" id="quitBtn" style="justify-content: center">
+            Abandon and start over
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="overlay" id="endOv" hidden>
+      <div class="modal" style="max-width: 480px">
+        <div class="label" id="endKicker"></div>
+        <h2 id="endTitle" style="font-size: 30px"></h2>
+        <p class="sub" id="endText"></p>
+        <table id="endTable"></table>
+        <div class="row">
+          <button class="btn" id="endView" style="justify-content: center">View the board</button
+          ><button class="btn primary" id="endNew">New game</button>
+        </div>
+      </div>
+    </div>
+    <!-- app:end -->
+
+    <script src="src/js/data.js"></script>
+    <script src="src/js/world.js"></script>
+    <script src="src/js/rules.js"></script>
+    <script src="src/js/ai.js"></script>
+    <script src="src/js/input.js"></script>
+    <script src="src/js/ui.js"></script>
+    <script src="src/js/gfx/core.js"></script>
+    <script src="src/js/gfx/textures.js"></script>
+    <script src="src/js/gfx/shaders.js"></script>
+    <script src="src/js/gfx/models.js"></script>
+    <script src="src/js/gfx/biomes.js"></script>
+    <script src="src/js/gfx/engine.js"></script>
+    <script src="src/js/gfx/atmosphere.js"></script>
+    <script src="src/js/gfx/particles.js"></script>
+    <script src="src/js/gfx/backdrop.js"></script>
+    <script src="src/js/gfx/combatfx.js"></script>
+    <script src="src/js/gfx/portraits.js"></script>
+    <script src="src/js/gfx/scene.js"></script>
+    <script src="src/js/gfx/units.js"></script>
+    <script src="src/js/gfx/sync.js"></script>
+    <script src="src/js/gfx/camera.js"></script>
+    <script src="src/js/gfx/frame.js"></script>
+    <script src="src/js/controls.js"></script>
+    <script src="src/js/main.js"></script>
+  </body>
+</html>

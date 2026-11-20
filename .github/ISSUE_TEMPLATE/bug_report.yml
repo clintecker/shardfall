@@ -1,0 +1,42 @@
+name: Bug report
+description: Something in Shardfall is broken, wrong, or on fire in a way that was not intended
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: And what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How can we make it happen again?
+      description: Board size, rivals, terrain, sky, your culture, the turn it happened on. A screenshot is worth a great deal.
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of problem is it?
+      options:
+        - Rules (the game did something the help page says it should not)
+        - Graphics (looks wrong, flickers, black screen)
+        - Performance (slow, hot, choppy)
+        - Controls or interface
+        - Something else
+    validations:
+      required: true
+  - type: input
+    id: where
+    attributes:
+      label: Browser, device and GPU
+      placeholder: Chrome 131 on a 2021 MacBook Pro (M1), or Safari on an iPhone 15
+    validations:
+      required: true
+  - type: textarea
+    id: console
+    attributes:
+      label: Anything in the browser console?
+      render: text

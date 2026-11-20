@@ -1,0 +1,16 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    ignore:
+      # Pinned on purpose: r147 is the last three.js with script-tag builds of the
+      # post-processing add-ons, and it must match the CDN version in index.html.
+      # See docs/RENDERING.md ("Why r147").
+      - dependency-name: three

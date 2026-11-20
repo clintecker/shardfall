@@ -1,0 +1,9 @@
+# Normalize line endings: LF in the repository, whatever the platform checks out.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+
+# Keep generated and vendored files out of language stats and collapsed in diffs.
+package-lock.json linguist-generated=true
+docs/media/** linguist-documentation=true

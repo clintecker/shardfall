@@ -1,0 +1,45 @@
+{
+  "name": "shardfall",
+  "version": "0.11.0",
+  "private": true,
+  "description": "A turn-based conquest for one commander. Four future cultures, one broken slab of world, thirty turns.",
+  "keywords": [
+    "game",
+    "strategy",
+    "turn-based",
+    "4x",
+    "webgl",
+    "threejs",
+    "browser-game",
+    "no-build"
+  ],
+  "homepage": "https://github.com/clintecker/shardfall#readme",
+  "bugs": {
+    "url": "https://github.com/clintecker/shardfall/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/clintecker/shardfall.git"
+  },
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "node scripts/serve.mjs",
+    "build": "node scripts/build.mjs",
+    "check": "node scripts/check.mjs",
+    "test": "node --test test/*.test.mjs",
+    "test:e2e": "node test/e2e/smoke.mjs",
+    "verify": "npm run format:check && npm run check && npm test && npm run build",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "balance": "node scripts/balance.mjs",
+    "screenshots": "node scripts/screenshots.mjs"
+  },
+  "devDependencies": {
+    "prettier": "3.10.1",
+    "three": "0.147.0"
+  }
+}

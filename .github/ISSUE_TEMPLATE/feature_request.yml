@@ -1,0 +1,22 @@
+name: Idea
+description: A unit, a rule, a sky, a quality-of-life fix, a fifth culture that is just very polite crabs
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What is the idea?
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: What would it make better?
+      description: The moment in a game where you wished for it is the most useful thing you can tell us.
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else?
+      description: Sketches, numbers, games that do it well. See docs/ROADMAP.md for what is already on the list.

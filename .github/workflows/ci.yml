@@ -45,7 +45,7 @@ jobs:
 
       - name: Upload the built game
         if: matrix.node == 22
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: shardfall-dist
           path: dist/
